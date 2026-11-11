@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0d10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Gastos</title>
+<style>
+  :root{
+    --bg:#0b0d10; --card:#151920; --card2:#1b202a; --txt:#f2f5f9; --mut:#8b96a8;
+    --acc:#4ade80; --acc2:#22d3ee; --warn:#fbbf24; --bad:#f87171; --line:#242b36;
+  }
+  @media (prefers-color-scheme: light){
+    :root{--bg:#f5f7fa; --card:#fff; --card2:#eef2f7; --txt:#0d1117; --mut:#5a6472; --line:#e3e8ef;}
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; background:var(--bg); color:var(--txt);
+       font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+       padding:env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom));}
+  .wrap{max-width:560px; margin:0 auto; padding:14px}
+  h1{font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut);
+     margin:6px 0 14px; font-weight:600}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:18px;
+        padding:16px; margin-bottom:12px}
+  .total{font-size:44px; font-weight:700; letter-spacing:-.02em; line-height:1.05}
+  .total small{font-size:20px; color:var(--mut); font-weight:600}
+  .row{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+  .mut{color:var(--mut); font-size:13px}
+  .chips{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:12px;
+         scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto; padding:8px 13px; border-radius:999px; background:var(--card2);
+        border:1px solid var(--line); color:var(--mut); font-size:13px; font-weight:600;
+        cursor:pointer; white-space:nowrap}
+  .chip.on{background:var(--acc); color:#06210f; border-color:var(--acc)}
+  .delta{font-size:13px; font-weight:600}
+  .up{color:var(--bad)} .down{color:var(--acc)}
+  .donut{display:flex; gap:16px; align-items:center}
+  svg.d{width:132px; height:132px; flex:0 0 auto; transform:rotate(-90deg)}
+  .legend{flex:1; min-width:0}
+  .lg{display:flex; align-items:center; gap:8px; font-size:13px; padding:3px 0}
+  .dot{width:9px; height:9px; border-radius:3px; flex:0 0 auto}
+  .lg .n{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .lg .v{color:var(--mut); font-variant-numeric:tabular-nums}
+  .bar{height:7px; background:var(--card2); border-radius:99px; overflow:hidden; margin-top:6px}
+  .bar i{display:block; height:100%; border-radius:99px}
+  .bud{margin-bottom:13px}
+  .bud:last-child{margin-bottom:0}
+  .tx{display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line)}
+  .tx:last-child{border-bottom:0}
+  .tx .nm{font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .tx .am{font-variant-numeric:tabular-nums; font-weight:600; font-size:14.5px; flex:0 0 auto}
+  .day{font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);
+       margin:16px 0 2px; font-weight:700}
+  .tag{font-size:11px; color:var(--mut); background:var(--card2); border-radius:6px;
+       padding:1px 6px; margin-left:6px}
+  nav{position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:space-around;
+      background:color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter:blur(14px);
+      border-top:1px solid var(--line); padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
+  nav button{background:none; border:0; color:var(--mut); font:600 11px/1.4 inherit; display:flex;
+             flex-direction:column; align-items:center; gap:3px; padding:4px 14px; cursor:pointer}
+  nav button.on{color:var(--acc)}
+  nav button span{font-size:19px}
+  .lock{position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column;
+        align-items:center; justify-content:center; gap:14px; z-index:9; padding:24px}
+  .lock h2{margin:0; font-size:18px}
+  .lock input{width:180px; text-align:center; letter-spacing:.5em; font-size:24px; padding:12px;
+              border-radius:14px; border:1px solid var(--line); background:var(--card); color:var(--txt)}
+  .lock button{padding:12px 26px; border-radius:14px; border:0; background:var(--acc);
+               color:#06210f; font-weight:700; font-size:15px}
+  .err{color:var(--bad); font-size:13px; min-height:18px}
+  .hide{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="lock" id="lock">
+  <h2>🔒 Gastos</h2>
+  <div class="mut" style="font-size:13px">Introduce tu PIN</div>
+  <input id="pin" type="tel" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••••">
+  <button onclick="unlock()">Entrar</button>
+  <div class="err" id="err"></div>
+</div>
+
+<div class="wrap hide" id="app">
+  <h1>Gastos · <span id="stamp"></span></h1>
+  <div class="chips" id="chips"></div>
+  <div id="view"></div>
+</div>
+
+<nav class="hide" id="nav">
+  <button data-t="mes" class="on"><span>◔</span>Mes</button>
+  <button data-t="sem"><span>◎</span>Semana</button>
+  <button data-t="mov"><span>≡</span>Movimientos</button>
+</nav>
+
+<script>
+const COLORS = ['#4ade80','#22d3ee','#a78bfa','#fbbf24','#f472b6','#60a5fa','#fb923c','#34d399','#f87171','#94a3b8'];
+let DATA = null, MES = null, TAB = 'mes';
+
+const eur = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(n||0);
+const eur0 = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
+const fmtD = s => new Date(s+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'});
+const fmtM = s => new Date(s+'-15T12:00:00').toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+
+async function unlock(){
+  const pin = document.getElementById('pin').value.trim();
+  if(pin.length < 4) return setErr('PIN incompleto');
+  try{
+    const enc = await (await fetch('data.enc.json',{cache:'no-store'})).json();
+    const b64 = s => Uint8Array.from(atob(s), c=>c.charCodeAt(0));
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt:b64(enc.salt), iterations:210000, hash:'SHA-256'},
+      base, {name:'AES-GCM', length:256}, false, ['decrypt']);
+    const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(enc.iv)}, key, b64(enc.ct));
+    DATA = JSON.parse(new TextDecoder().decode(plain));
+    localStorage.setItem('panel_pin', pin);
+    start();
+  }catch(e){ setErr('PIN incorrecto'); }
+}
+function setErr(m){ document.getElementById('err').textContent = m; }
+
+function start(){
+  document.getElementById('lock').classList.add('hide');
+  document.getElementById('app').classList.remove('hide');
+  document.getElementById('nav').classList.remove('hide');
+  document.getElementById('stamp').textContent = fmtM(DATA.today.slice(0,7));
+  const months = Object.keys(DATA.months);
+  MES = months[months.length-1];
+  renderChips(months);
+  document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+    TAB=b.dataset.t; document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b)); render();
+  });
+  render();
+}
+function renderChips(months){
+  document.getElementById('chips').innerHTML = months.slice(-6).reverse().map(m=>{
+    const t = DATA.months[m].total;
+    const nm = new Date(m+'-15T12:00:00').toLocaleDateString('es-ES',{month:'short'});
+    const nmc = nm.charAt(0).toUpperCase()+nm.slice(1).replace('.','');
+    return `<div class="chip ${m===MES?'on':''}" data-m="${m}">${nmc} · ${eur0(t)}</div>`;
+  }).join('');
+  document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ MES=c.dataset.m; renderChips(months); render(); });
+}
+
+function weekRange(){
+  // ventana cerrada: jueves -> martes (el martes más reciente)
+  const t = new Date(DATA.today+'T12:00:00');
+  const back = (t.getDay() - 2 + 7) % 7;      // días desde el último martes
+  const end = new Date(t); end.setDate(t.getDate() - back);
+  const start = new Date(end); start.setDate(end.getDate() - 5);
+  const iso = d => new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  return [iso(start), iso(end)];
+}
+
+function donut(cat){
+  const tot = Object.values(cat).reduce((a,b)=>a+b,0);
+  if(!tot) return '<div class="mut" style="width:132px;text-align:center;font-size:12px;line-height:132px">sin datos</div>';
+  let acc = 0, segs = '';
+  const keys = Object.keys(cat).sort((a,b)=>cat[b]-cat[a]);
+  keys.forEach((k,i)=>{
+    const p = cat[k]/tot*100;
+    segs += `<circle r="15.9" cx="21" cy="21" fill="none" stroke="${COLORS[i%COLORS.length]}"
+      stroke-width="6" stroke-dasharray="${p} ${100-p}" stroke-dashoffset="${25-acc}"
+      pathLength="100"></circle>`;
+    acc += p;
+  });
+  return `<svg class="d" viewBox="0 0 42 42">
+    <circle r="15.9" cx="21" cy="21" fill="none" stroke="var(--card2)" stroke-width="6"></circle>
+    ${segs}</svg>`;
+}
+
+function render(){
+  const box = document.getElementById('view');
+  if(TAB==='mes') box.innerHTML = viewMes();
+  if(TAB==='sem') box.innerHTML = viewSemana();
+  if(TAB==='mov') box.innerHTML = viewMovs();
+}
+
+function viewMes(){
+  const m = DATA.months[MES];
+  const keys = Object.keys(DATA.months);
+  const prev = keys[keys.indexOf(MES)-1];
+  const pt = prev ? DATA.months[prev].total : 0;
+  const days = new Date(+MES.slice(0,4), +MES.slice(5,7), 0).getDate();
+  const isCur = MES === DATA.today.slice(0,7);
+  const elapsed = isCur ? new Date(DATA.today).getDate() : days;
+  const pace = m.total / elapsed;
+  const projected = pace * days;
+  const d = pt ? (projected-pt)/pt*100 : 0;
+  const cats = Object.keys(m.cat).sort((a,b)=>m.cat[b]-m.cat[a]);
+  const total = m.total || 1;
+
+  const others = keys.filter(k=>k!==MES && !(k===DATA.today.slice(0,7)));
+  const avg = {};
+  others.forEach(k=>Object.entries(DATA.months[k].cat).forEach(([c,v])=>avg[c]=(avg[c]||0)+v/others.length));
+  const bud = others.length ? cats.slice(0,6).map(c=>{
+    const lim = avg[c] || 0, used = m.cat[c];
+    const pct = lim ? Math.min(used/lim*100,100) : 100;
+    const col = !lim ? 'var(--mut)' : pct>110? 'var(--bad)' : pct>90? 'var(--warn)' : 'var(--acc)';
+    return `<div class="bud"><div class="row"><div>${c}</div>
+      <div class="mut">${eur0(used)} <span style="opacity:.6">· media ${eur0(lim)}</span></div></div>
+      <div class="bar"><i style="width:${pct}%;background:${col}"></i></div></div>`;
+  }).join('') : '';
+
+  return `
+  <div class="card">
+    <div class="mut">Gastado en ${fmtM(MES)}</div>
+    <div class="total">${eur(m.total)}</div>
+    <div class="row" style="margin-top:6px">
+      <div class="mut">${m.n} movimientos · ${eur0(pace)}/día</div>
+      ${prev?`<div class="delta ${d>0?'up':'down'}">${d>0?'▲':'▼'} ${Math.abs(d).toFixed(0)}% ${isCur?'ritmo':'vs mes ant.'}</div>`:''}
+    </div>
+  </div>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px"><b>Por categoría</b><span class="mut">${cats.length}</span></div>
+    <div class="donut">${donut(m.cat)}
+      <div class="legend">${cats.slice(0,7).map((c,i)=>`
+        <div class="lg"><span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
+        <span class="n">${c}</span><span class="v">${Math.round(m.cat[c]/total*100)}%</span></div>`).join('')}
+      </div>
+    </div>
+  </div>
+  ${bud?`<div class="card"><div class="row" style="margin-bottom:12px"><b>Vs tu media</b>
+     <span class="mut">meses anteriores</span></div>${bud}</div>`:''}
+  ${m.big.length?`<div class="card"><div class="row" style="margin-bottom:8px"><b>Compras grandes</b>
+     <span class="mut">≥50 €</span></div>
+     ${m.big.map(b=>`<div class="tx"><div class="nm">${b.m}</div><div class="am">${eur(b.a)}</div></div>`).join('')}
+     </div>`:''}
+  <div class="mut" style="text-align:center;font-size:11px;margin:18px 0">
+    Actualizado ${new Date(DATA.generated).toLocaleString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+  </div>`;
+}
+
+function viewSemana(){
+  const [a,b] = weekRange();
+  const tx = DATA.tx.filter(t=>t.d>=a && t.d<=b);
+  const small = tx.filter(t=>t.a<50);
+  const tot = small.reduce((s,t)=>s+t.a,0);
+  const big = tx.filter(t=>t.a>=50);
+  const days = Math.max(1,(new Date(b)-new Date(a))/864e5+1);
+  const byCat = {};
+  small.forEach(t=>byCat[t.c]=(byCat[t.c]||0)+t.a);
+  const cats = Object.keys(byCat).sort((x,y)=>byCat[y]-byCat[x]);
+  const t2 = tot || 1;
+  return `
+  <div class="card">
+    <div class="mut">Gasto corriente · ${a} → ${b}</div>
+    <div class="total">${eur(tot)}</div>
+    <div class="row" style="margin-top:6px">
+      <div class="mut">${small.length} mov · sin compras ≥50 €</div>
+      <div class="mut">${eur(tot/days)}/día</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px"><b>Reparto</b></div>
+    <div class="donut">${donut(byCat)}
+      <div class="legend">${cats.slice(0,7).map((c,i)=>`
+        <div class="lg"><span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
+        <span class="n">${c}</span><span class="v">${eur0(byCat[c])}</span></div>`).join('')}</div>
+    </div>
+  </div>
+  ${big.length?`<div class="card"><div class="row" style="margin-bottom:8px"><b>Fuera del cómputo</b>
+    <span class="mut">≥50 €</span></div>
+    ${big.map(x=>`<div class="tx"><div class="nm">${x.m}</div><div class="am">${eur(x.a)}</div></div>`).join('')}</div>`:''}
+  <div class="card">
+    <div class="row" style="margin-bottom:4px"><b>Día a día</b></div>
+    ${[...new Set(tx.map(t=>t.d))].map(d=>`
+      <div class="day">${fmtD(d)} · ${eur(tx.filter(t=>t.d===d).reduce((s,t)=>s+t.a,0))}</div>
+      ${tx.filter(t=>t.d===d).map(t=>`<div class="tx"><div class="nm">${t.m}
+        <span class="tag">${t.c}</span></div><div class="am">${eur(t.a)}</div></div>`).join('')}`).join('')}
+  </div>`;
+}
+
+function viewMovs(){
+  const rows = DATA.tx.slice().reverse().slice(0,150);
+  const days = [...new Set(rows.map(t=>t.d))];
+  return `<div class="card">
+    <div class="row" style="margin-bottom:4px"><b>Últimos movimientos</b>
+      <span class="mut">${rows.length}</span></div>
+    ${days.map(d=>`
+      <div class="day">${fmtD(d)}</div>
+      ${rows.filter(t=>t.d===d).map(t=>`<div class="tx">
+        <div class="nm">${t.m}<span class="tag">${t.c}</span></div>
+        <div class="am">${eur(t.a)}${t.cur!=='EUR'?`<span class="mut" style="font-weight:400;font-size:11px">
+          <br>${new Intl.NumberFormat('es-ES').format(t.orig)} ${t.cur}</span>`:''}</div></div>`).join('')}`).join('')}
+  </div>`;
+}
+
+// auto-unlock si ya se usó en este dispositivo
+window.addEventListener('load', ()=>{
+  const p = localStorage.getItem('panel_pin');
+  if(p){ document.getElementById('pin').value = p; unlock(); }
+});
+document.getElementById('pin').addEventListener('keydown', e=>{ if(e.key==='Enter') unlock(); });
+</script>
+</body>
+</html>

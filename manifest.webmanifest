@@ -1,0 +1,17 @@
+{
+ "name": "Gastos",
+ "short_name": "Gastos",
+ "start_url": "./",
+ "display": "standalone",
+ "background_color": "#0b0d10",
+ "theme_color": "#0b0d10",
+ "lang": "es",
+ "icons": [
+  {
+   "src": "icon.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any maskable"
+  }
+ ]
+}
