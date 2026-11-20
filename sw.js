@@ -1,6 +1,6 @@
 // Offline: la app abre sin conexión. Los datos se piden a la red primero
 // y, si no hay red, se usa la última copia (cifrada) guardada.
-const CACHE = 'gastos-v2';
+const CACHE = 'gastos-v3';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon.png'];
 
 self.addEventListener('install', e => {
